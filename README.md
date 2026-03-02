@@ -15,8 +15,15 @@ Extra columns are allowed but ignored.
 From repo root:
 
 ```bash
-PYTHONPATH=src python -m news_return_pipeline.scripts.run_preprocess --input data/raw/sample.csv --output data/processed/daily_agg.csv --k_forward 5
+pip install -e .
+python -m news_return_pipeline.scripts.run_preprocess
 ```
+
+Notes:
+- The raw input file must exist in `data/raw/`.
+- The default raw filename is defined in `Config` as `raw_filename` (default: `sample.csv`).
+- Processed output is written to `data/processed/`.
+- The default processed filename is defined in `Config` as `processed_filename` (default: `daily_agg.csv`).
 
 ## Output columns
 The processed CSV contains:
