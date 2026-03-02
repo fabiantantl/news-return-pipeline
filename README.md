@@ -15,7 +15,8 @@ Extra columns are allowed but ignored.
 From repo root:
 
 ```bash
-PYTHONPATH=src python -m news_return_pipeline.scripts.run_preprocess --input data/raw/sample.csv --output data/processed/daily_agg.csv --k_forward 5
+pip install -e .
+python -m news_return_pipeline.scripts.run_preprocess --input data/raw/sample.csv --output data/processed/daily_agg.csv --k_forward 5
 ```
 
 ## Output columns
