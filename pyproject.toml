@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "news-return-pipeline"
+version = "0.1.0"
+description = "Reproducible ML pipeline for testing news headline signal on stock returns."
+authors = [{ name = "Fabian Tan" }]
+readme = "README.md"
+requires-python = ">=3.9"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
