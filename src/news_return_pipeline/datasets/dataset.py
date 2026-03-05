@@ -41,6 +41,15 @@ def load_csv(path: str | Path) -> pd.DataFrame:
     return selected
 
 
+def save_dataset(df: pd.DataFrame, output_path: str | Path) -> Path:
+    """Save a dataframe to disk, creating parent directories as needed."""
+
+    target = Path(output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(target, index=False)
+    return target
+
+
 def _validate_year_range(name: str, year_range: YearRange) -> None:
     start, end = year_range
     if start > end:
