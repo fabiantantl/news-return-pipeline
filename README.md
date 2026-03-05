@@ -11,6 +11,18 @@ Input CSV files must contain these columns:
 
 Extra columns are allowed but ignored.
 
+## Import Kaggle prototype dataset
+Use this one-time importer to download the FindKG GDELT-based financial news dataset and place it in `data/raw/`:
+
+```bash
+pip install kagglehub
+python -m news_return_pipeline.scripts.import_prototype_kaggle
+# optional override:
+# python -m news_return_pipeline.scripts.import_prototype_kaggle --dataset <owner/slug> --output-filename custom.csv
+```
+
+This writes `data/raw/kaggle_findkg_news_clean.csv` with normalized columns (`date`, `headline`, `close`) so it can be used directly by the preprocessing pipeline.
+
 ## Run preprocessing
 From repo root:
 
@@ -21,7 +33,7 @@ python -m news_return_pipeline.scripts.run_preprocess
 
 Notes:
 - The raw input file must exist in `data/raw/`.
-- The default raw filename is defined in `Config` as `raw_filename` (default: `sample.csv`).
+- The default raw filename is defined in `Config` as `raw_filename` (default: `kaggle_findkg_news_clean.csv`).
 - Processed output is written to `data/processed/`.
 - The default processed filename is defined in `Config` as `processed_filename` (default: `daily_agg.csv`).
 
