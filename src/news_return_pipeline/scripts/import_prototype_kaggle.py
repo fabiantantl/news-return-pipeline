@@ -7,7 +7,7 @@ import argparse
 import kagglehub
 import pandas as pd
 
-from news_return_pipeline.data.import_kaggle import (
+from news_return_pipeline.datasets.import_kaggle import (
     normalize_prototype_schema,
     resolve_dataset_csv,
 )

@@ -15,7 +15,7 @@ Extra columns are allowed but ignored.
 Use this one-time importer to download the FindKG GDELT-based financial news dataset and place it in `data/raw/`:
 
 ```bash
-pip install kagglehub
+python -m pip install kagglehub
 python -m news_return_pipeline.scripts.import_prototype_kaggle
 # optional override:
 # python -m news_return_pipeline.scripts.import_prototype_kaggle --dataset <owner/slug> --output-filename custom.csv
@@ -27,7 +27,7 @@ This writes `data/raw/kaggle_findkg_news_clean.csv` with normalized columns (`da
 From repo root:
 
 ```bash
-pip install -e .
+python -m pip install -e .
 python -m news_return_pipeline.scripts.run_preprocess
 ```
 
@@ -45,3 +45,13 @@ The processed CSV contains:
 - `n_headlines`
 - `close` (last close observed for that date)
 - `ret_k` (k-forward return, `close.shift(-k)/close - 1`)
+
+
+## Windows (without editable install)
+If you prefer not to install the package in editable mode, run commands with `PYTHONPATH=src` style module resolution:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m news_return_pipeline.scripts.import_prototype_kaggle
+python -m news_return_pipeline.scripts.run_preprocess
+```
