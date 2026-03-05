@@ -1,9 +1,44 @@
-"""Temporal dataset splitting utilities."""
+"""Dataset loading and temporal splitting utilities."""
+
+from pathlib import Path
 
 import pandas as pd
 
-
+REQUIRED_COLUMNS = ("date", "headline", "close")
 YearRange = tuple[int, int]
+
+
+def load_csv(path: str | Path) -> pd.DataFrame:
+    """Load and validate a raw CSV with required columns."""
+
+    input_path = Path(path)
+    df = pd.read_csv(input_path)
+
+    missing = [column for column in REQUIRED_COLUMNS if column not in df.columns]
+    if missing:
+        raise ValueError(
+            "Raw CSV is missing required columns: "
+            f"{missing}. Required columns are: {list(REQUIRED_COLUMNS)}"
+        )
+
+    selected = df.loc[:, list(REQUIRED_COLUMNS)].copy()
+
+    selected["date"] = pd.to_datetime(selected["date"], errors="coerce")
+    if selected["date"].isna().any():
+        invalid_count = int(selected["date"].isna().sum())
+        raise ValueError(
+            f"Column 'date' contains {invalid_count} non-parseable value(s)."
+        )
+
+    selected["headline"] = selected["headline"].astype(str)
+    selected["close"] = pd.to_numeric(selected["close"], errors="coerce")
+    if selected["close"].isna().any():
+        invalid_count = int(selected["close"].isna().sum())
+        raise ValueError(
+            f"Column 'close' contains {invalid_count} non-numeric value(s)."
+        )
+
+    return selected
 
 
 def _validate_year_range(name: str, year_range: YearRange) -> None:
@@ -42,7 +77,11 @@ def split_by_year(
     ):
         _validate_year_range(name, year_range)
 
-    if _ranges_overlap(train_years, val_years) or _ranges_overlap(train_years, test_years) or _ranges_overlap(val_years, test_years):
+    if (
+        _ranges_overlap(train_years, val_years)
+        or _ranges_overlap(train_years, test_years)
+        or _ranges_overlap(val_years, test_years)
+    ):
         raise ValueError(
             "Year ranges must be non-overlapping. "
             f"Got train={train_years}, val={val_years}, test={test_years}."
@@ -86,4 +125,8 @@ def split_by_year(
             f"Got max(val.date)={val_max}, min(test.date)={test_min}."
         )
 
-    return train_df.reset_index(drop=True), val_df.reset_index(drop=True), test_df.reset_index(drop=True)
+    return (
+        train_df.reset_index(drop=True),
+        val_df.reset_index(drop=True),
+        test_df.reset_index(drop=True),
+    )

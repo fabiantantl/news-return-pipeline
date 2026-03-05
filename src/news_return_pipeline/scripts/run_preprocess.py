@@ -5,8 +5,8 @@ from __future__ import annotations
 import argparse
 
 from news_return_pipeline.config import Config
-from news_return_pipeline.data.load_raw import load_csv
-from news_return_pipeline.data.preprocess import preprocess_raw_to_daily_agg
+from news_return_pipeline.datasets.dataset import load_csv
+from news_return_pipeline.datasets.preprocess import preprocess_raw_to_daily_agg
 from news_return_pipeline.paths import get_processed_path, get_raw_path
 
 
