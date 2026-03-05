@@ -8,7 +8,7 @@ class Config:
     """Minimal configuration for preprocessing and temporal splitting."""
 
     dataset_name: str = "custom"
-    raw_filename: str = "sample.csv"
+    raw_filename: str = "kaggle_findkg_news_clean.csv"
     processed_filename: str = "daily_agg.csv"
     k_forward: int = 5
     train_years: tuple[int, int] = (2010, 2017)
