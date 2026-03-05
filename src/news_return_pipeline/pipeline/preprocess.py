@@ -2,13 +2,11 @@
 
 import pandas as pd
 
+from news_return_pipeline.config import Config
+
 
 def aggregate_headlines(df_raw: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate raw rows into one row per day.
-
-    Headlines are joined as ``" [SEP] "`` in original row order for each date.
-    If multiple close values exist for a date, the last close value of that date is kept.
-    """
+    """Aggregate raw rows into one row per day."""
 
     df = df_raw.copy()
     df["date"] = pd.to_datetime(df["date"]).dt.normalize()
@@ -36,16 +34,16 @@ def add_forward_return(df_daily: pd.DataFrame, k_forward: int) -> pd.DataFrame:
 
     df = df_daily.copy()
     df["ret_k"] = df["close"].shift(-k_forward) / df["close"] - 1.0
-    if k_forward > 0:
-        df = df.iloc[:-k_forward]
+    df = df.iloc[:-k_forward]
     df = df.dropna(subset=["ret_k"]).reset_index(drop=True)
     return df
 
 
-def preprocess_raw_to_daily_agg(df_raw: pd.DataFrame, k_forward: int) -> pd.DataFrame:
+def preprocess_news_dataframe(df_raw: pd.DataFrame, k_forward: int | None = None) -> pd.DataFrame:
     """Convert raw rows into a daily aggregated dataset with forward returns."""
 
+    effective_k = Config().k_forward if k_forward is None else k_forward
     df_daily = aggregate_headlines(df_raw)
-    df_processed = add_forward_return(df_daily, k_forward=k_forward)
+    df_processed = add_forward_return(df_daily, k_forward=effective_k)
     expected_order = ["date", "year", "text", "n_headlines", "close", "ret_k"]
     return df_processed.loc[:, expected_order]

@@ -11,31 +11,19 @@ Input CSV files must contain these columns:
 
 Extra columns are allowed but ignored.
 
-## Import Kaggle prototype dataset
-Use this one-time importer to download the FindKG GDELT-based financial news dataset and place it in `data/raw/`:
-
-```bash
-python -m pip install kagglehub
-python -m news_return_pipeline.scripts.import_prototype_kaggle
-# optional override:
-# python -m news_return_pipeline.scripts.import_prototype_kaggle --dataset <owner/slug> --output-filename custom.csv
-```
-
-This writes `data/raw/kaggle_findkg_news_clean.csv` with normalized columns (`date`, `headline`, `close`) so it can be used directly by the preprocessing pipeline.
-
-## Run preprocessing
+## Build dataset (single pipeline entrypoint)
 From repo root:
 
 ```bash
 python -m pip install -e .
-python -m news_return_pipeline.scripts.run_preprocess
+python -m news_return_pipeline.scripts.build_dataset
 ```
 
-Notes:
-- The raw input file must exist in `data/raw/`.
-- The default raw filename is defined in `Config` as `raw_filename` (default: `kaggle_findkg_news_clean.csv`).
-- Processed output is written to `data/processed/`.
-- The default processed filename is defined in `Config` as `processed_filename` (default: `daily_agg.csv`).
+This command performs the full pipeline:
+1. Downloads the prototype Kaggle dataset.
+2. Normalizes schema to `date`, `headline`, `close`.
+3. Preprocesses into daily aggregates + forward returns.
+4. Writes output to `data/processed/dataset.csv`.
 
 ## Output columns
 The processed CSV contains:
@@ -46,12 +34,10 @@ The processed CSV contains:
 - `close` (last close observed for that date)
 - `ret_k` (k-forward return, `close.shift(-k)/close - 1`)
 
-
 ## Windows (without editable install)
 If you prefer not to install the package in editable mode, run commands with `PYTHONPATH=src` style module resolution:
 
 ```powershell
 $env:PYTHONPATH="src"
-python -m news_return_pipeline.scripts.import_prototype_kaggle
-python -m news_return_pipeline.scripts.run_preprocess
+python -m news_return_pipeline.scripts.build_dataset
 ```

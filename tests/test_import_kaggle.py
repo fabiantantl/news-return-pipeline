@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from news_return_pipeline.datasets.import_kaggle import normalize_prototype_schema
+from news_return_pipeline.datasets.kaggle import normalize_prototype_schema
 
 
 def test_normalize_prototype_schema_fixture() -> None:

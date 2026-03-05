@@ -1,4 +1,4 @@
-"""Utilities for importing a cleaned prototyping dataset from Kaggle."""
+"""Utilities for downloading and normalizing a prototype Kaggle dataset."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
+DEFAULT_DATASET = "fabrikakung/findkg-financial-news-with-sp500-and-bitcoin"
 DATE_CANDIDATES = ("date", "datetime", "timestamp", "time")
 HEADLINE_CANDIDATES = ("headline", "title", "news", "text", "article", "summary")
 CLOSE_CANDIDATES = ("close", "adj_close", "adj close", "price", "sp500", "index_close")
@@ -26,33 +27,6 @@ def _pick_column(columns: list[str], candidates: tuple[str, ...], semantic_name:
     raise ValueError(
         f"Could not find a '{semantic_name}' column. Available columns: {columns}"
     )
-
-
-def normalize_prototype_schema(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize a Kaggle dataframe into required pipeline schema."""
-
-    columns = list(df.columns)
-    date_col = _pick_column(columns, DATE_CANDIDATES, "date")
-    headline_col = _pick_column(columns, HEADLINE_CANDIDATES, "headline")
-    close_col = _pick_column(columns, CLOSE_CANDIDATES, "close")
-
-    selected_columns = [date_col, headline_col] + ([close_col] if close_col else [])
-    cleaned = df.loc[:, selected_columns].copy()
-    rename_map = {date_col: "date", headline_col: "headline"}
-    if close_col:
-        rename_map[close_col] = "close"
-    cleaned = cleaned.rename(columns=rename_map)
-
-    if "close" not in cleaned.columns:
-        cleaned["close"] = pd.NA
-
-    cleaned = cleaned.loc[:, ["date", "headline", "close"]]
-    cleaned["date"] = pd.to_datetime(cleaned["date"], errors="coerce").dt.strftime("%Y-%m-%d")
-    cleaned["headline"] = cleaned["headline"].astype(str).str.strip()
-    cleaned["close"] = pd.to_numeric(cleaned["close"], errors="coerce")
-    cleaned = cleaned.dropna(subset=["date", "headline"]).reset_index(drop=True)
-
-    return cleaned
 
 
 def resolve_dataset_csv(download_dir: str | Path) -> Path:
@@ -87,3 +61,40 @@ def resolve_dataset_csv(download_dir: str | Path) -> Path:
 
     eligible.sort(key=lambda item: (item[0], item[1]), reverse=True)
     return eligible[0][2]
+
+
+def download_kaggle_dataset(dataset: str = DEFAULT_DATASET) -> pd.DataFrame:
+    """Download a Kaggle dataset and return the best matching CSV as a dataframe."""
+
+    import kagglehub
+
+    download_path = kagglehub.dataset_download(dataset)
+    source_csv = resolve_dataset_csv(download_path)
+    return pd.read_csv(source_csv)
+
+
+def normalize_prototype_schema(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize a Kaggle dataframe into required pipeline schema."""
+
+    columns = list(df.columns)
+    date_col = _pick_column(columns, DATE_CANDIDATES, "date")
+    headline_col = _pick_column(columns, HEADLINE_CANDIDATES, "headline")
+    close_col = _pick_column(columns, CLOSE_CANDIDATES, "close")
+
+    selected_columns = [date_col, headline_col] + ([close_col] if close_col else [])
+    cleaned = df.loc[:, selected_columns].copy()
+    rename_map = {date_col: "date", headline_col: "headline"}
+    if close_col:
+        rename_map[close_col] = "close"
+    cleaned = cleaned.rename(columns=rename_map)
+
+    if "close" not in cleaned.columns:
+        cleaned["close"] = pd.NA
+
+    cleaned = cleaned.loc[:, ["date", "headline", "close"]]
+    cleaned["date"] = pd.to_datetime(cleaned["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    cleaned["headline"] = cleaned["headline"].astype(str).str.strip()
+    cleaned["close"] = pd.to_numeric(cleaned["close"], errors="coerce")
+    cleaned = cleaned.dropna(subset=["date", "headline"]).reset_index(drop=True)
+
+    return cleaned

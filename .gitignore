@@ -8,3 +8,4 @@ venv/
 .pytest_cache/
 data/processed/*.csv
 results/metrics/*
+*.egg-info
