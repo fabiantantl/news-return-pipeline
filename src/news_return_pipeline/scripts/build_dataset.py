@@ -44,7 +44,12 @@ def main(force_download: bool = False) -> None:
         print("FinBERT dataset already exists, skipping...")
     else:
         print("Running FinBERT sentiment...")
-        news_finbert_df = compute_finbert_sentiment(news_df, text_column="title")
+        # Call FinBERT 
+        news_finbert_df = compute_finbert_sentiment(
+        news_df,
+        text_column="title",
+        batch_size=64,
+        )
         news_finbert_df.to_csv(news_finbert_output_path, index=False)
 
     # -------------------------
