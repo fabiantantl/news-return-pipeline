@@ -6,14 +6,17 @@ build-backend = "setuptools.build_meta"
 name = "news-return-pipeline"
 version = "0.1.0"
 description = "Reproducible ML pipeline for testing news headline signal on stock returns."
-authors = [{ name = "Fabian Tan" }]
+authors = [
+  { name = "Fabian Tan" },
+  { name = "Hector Chen" }
+]
 readme = "README.md"
 requires-python = ">=3.9"
 
 dependencies = [
   "pandas>=2.0",
   "kagglehub>=0.3",
-  "python-dotenv>=1.0"
+  "python-dotenv>=1.0",
   "pyarrow>=15.0"
 ]
 
