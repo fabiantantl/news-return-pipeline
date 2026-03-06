@@ -50,10 +50,10 @@ def preprocess_news_dataframe(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = filter_columns(df_raw)
     df = normalize_dates(df)
 
-    # drop rows with missing titles
-    df = df.dropna(subset=["title"])
+    # clean titles and drop invalid ones
+    df["title"] = df["title"].fillna("").astype(str).str.strip()
+    df = df[df["title"] != ""]
 
     print("Rows after dropping missing titles:", len(df))
-    # Drop = True
-    # Renumber the rows so that order is maintained
+    # Reorder the rows after dropping / drop = True
     return df.reset_index(drop=True)
