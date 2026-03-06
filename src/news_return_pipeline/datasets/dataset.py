@@ -1,4 +1,4 @@
-"""Dataset loading and temporal splitting utilities."""
+"""Dataset loading utilities."""
 
 from pathlib import Path
 

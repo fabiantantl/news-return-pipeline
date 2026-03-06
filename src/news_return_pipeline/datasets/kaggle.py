@@ -1,4 +1,6 @@
-"""Utilities for downloading and inspecting a Kaggle dataset."""
+# Downloading the Dataset
+# ONLY FOR INSPECTION!!! DON'T MODIFY THE DATASET HERE
+# KEEP IT IMMUTABLE
 
 from __future__ import annotations
 
