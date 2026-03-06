@@ -1,2 +1,0 @@
-pandas>=2.0
-kagglehub>=0.3
