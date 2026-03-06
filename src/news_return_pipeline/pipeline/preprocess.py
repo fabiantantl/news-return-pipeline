@@ -1,7 +1,7 @@
 # PREPROCESSING
 # Raw news data
 # 1) Filter Data Columns leaving data, title, meta_data...
-# 2) Normalize the date time
+# 2) Normalize the date to date time
 import pandas as pd
 
 

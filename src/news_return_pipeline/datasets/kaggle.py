@@ -40,13 +40,13 @@ def download_kaggle_dataset(dataset: str = DEFAULT_DATASET) -> pd.DataFrame:
 
         df = pd.read_parquet(source_file)
 
-        print("Shape:", df.shape)
-        print("Columns:", df.columns.tolist())
-        print(df.head())
+        # print("Shape:", df.shape)
+        # print("Columns:", df.columns.tolist())
+        # print(df.head())
 
-        print(df["gkg_themes"].head(20))
-        print(df["gkg_orgs"].head(20))
-        print(df["gkg_persons"].head(20))
+        # print(df["gkg_themes"].head(20))
+        # print(df["gkg_orgs"].head(20))
+        # print(df["gkg_persons"].head(20))
         return df
 
     except Exception as e:
