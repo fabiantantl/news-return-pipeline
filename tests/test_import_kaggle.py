@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from news_return_pipeline.datasets.kaggle import normalize_prototype_schema
+from news_return_pipeline.datasets.kaggle_news import normalize_prototype_schema
 
 
 def test_normalize_prototype_schema_fixture() -> None:
@@ -16,7 +16,7 @@ def test_normalize_prototype_schema_fixture() -> None:
     assert result["headline"].tolist() == ["Markets rise", "Fed signals pause"]
     assert result["close"].tolist() == [4800.5, 4821.0]
 
-from news_return_pipeline.datasets.kaggle import download_kaggle_dataset
+from news_return_pipeline.datasets.kaggle_news import download_kaggle_dataset
 
 df = download_kaggle_dataset()
 
