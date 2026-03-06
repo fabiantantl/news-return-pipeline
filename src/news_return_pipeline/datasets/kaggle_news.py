@@ -17,7 +17,7 @@ load_dotenv()
 DEFAULT_DATASET = "verracodeguacas/findkg-gdelt-based-financial-news-and-mentions"
 
 
-def download_kaggle_dataset(dataset: str = DEFAULT_DATASET) -> pd.DataFrame:
+def download_news_headlines(dataset: str = DEFAULT_DATASET) -> pd.DataFrame:
     """Download the Kaggle dataset and load one articles parquet file."""
 
     token = os.getenv("KAGGLE_API_TOKEN")
@@ -54,4 +54,4 @@ def download_kaggle_dataset(dataset: str = DEFAULT_DATASET) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    download_kaggle_dataset()
+    download_news_headlines()

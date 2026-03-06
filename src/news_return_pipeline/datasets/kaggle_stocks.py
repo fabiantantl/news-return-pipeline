@@ -38,4 +38,4 @@ def download_stock_prices(dataset: str = DEFAULT_DATASET) -> pd.DataFrame:
 
     return df
 
-download_stock_prices()
+# download_stock_prices()

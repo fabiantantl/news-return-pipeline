@@ -9,3 +9,5 @@ venv/
 data/processed/*.csv
 results/metrics/*
 *.egg-info
+# .txt for high level overview
+repopackpy-output.txt

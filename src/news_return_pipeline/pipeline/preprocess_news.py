@@ -2,6 +2,8 @@
 # Raw news data
 # 1) Filter Data Columns leaving data, title, meta_data...
 # 2) Normalize the date to date time
+# 3) Drop rows where the titles are NAN
+# 4) Renumber the rows so that order is maintained
 
 import pandas as pd
 
@@ -48,4 +50,10 @@ def preprocess_news_dataframe(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = filter_columns(df_raw)
     df = normalize_dates(df)
 
+    # drop rows with missing titles
+    df = df.dropna(subset=["title"])
+
+    print("Rows after dropping missing titles:", len(df))
+    # Drop = True
+    # Renumber the rows so that order is maintained
     return df.reset_index(drop=True)
