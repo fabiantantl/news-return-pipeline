@@ -66,8 +66,10 @@ Key mappings include:
 
 From repo root:
 
+```bash
 python -m pip install -e .
 python -m news_return_pipeline.scripts.build_dataset
+```
 
 This command performs the full pipeline:
 
@@ -86,15 +88,6 @@ The processed CSV contains:
 - text (headlines for each day joined by `[SEP]`)
 - n_headlines
 - additional engineered features depending on preprocessing steps
-
-## Windows (without editable install)
-
-If you prefer not to install the package in editable mode, run commands with PYTHONPATH module resolution:
-
-PowerShell:
-
-$env:PYTHONPATH="src"
-python -m news_return_pipeline.scripts.build_dataset
 
 ## Authors
 
