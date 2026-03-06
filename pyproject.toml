@@ -10,6 +10,17 @@ authors = [{ name = "Fabian Tan" }]
 readme = "README.md"
 requires-python = ">=3.9"
 
+dependencies = [
+  "pandas>=2.0",
+  "kagglehub>=0.3",
+  "python-dotenv>=1.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0"
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 

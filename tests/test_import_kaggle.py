@@ -15,3 +15,17 @@ def test_normalize_prototype_schema_fixture() -> None:
     assert result["date"].tolist() == ["2024-01-02", "2024-01-03"]
     assert result["headline"].tolist() == ["Markets rise", "Fed signals pause"]
     assert result["close"].tolist() == [4800.5, 4821.0]
+
+from news_return_pipeline.datasets.kaggle import download_kaggle_dataset
+
+df = download_kaggle_dataset()
+
+print("Shape:", df.shape)
+print("Columns:", df.columns.tolist())
+print("\nPreview:")
+print(df.head(10))
+
+
+# if __name__ == "__main__":
+#     test_normalize_prototype_schema_fixture()
+#     print("Test passed")
