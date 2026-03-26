@@ -11,3 +11,4 @@ results/metrics/*
 *.egg-info
 # .txt for high level overview
 repopackpy-output.txt
+data/raw/
