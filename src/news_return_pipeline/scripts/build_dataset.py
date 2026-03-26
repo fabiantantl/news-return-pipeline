@@ -4,7 +4,7 @@
 # 3) save output to data/processed/...
 
 # Feature 1
-# Boolean Flag to redownload the datasets from Kaggle
+# Boolean flag to redownload the datasets from Kaggle
 
 import pandas as pd
 
@@ -20,8 +20,10 @@ from news_return_pipeline.pipeline.finbert_sentiment import compute_finbert_sent
 from news_return_pipeline.pipeline.preprocess_news import preprocess_news_dataframe
 from news_return_pipeline.pipeline.preprocess_stocks import preprocess_stocks_dataframe
 
+from news_return_pipeline.pipeline.aggregate_news import build_daily_news_features
 
-def main(force_download: bool = False) -> None:
+
+def main(force_download: bool = False, run_finbert: bool = False) -> None:
     """Download raw data if needed, preprocess from raw, and save outputs."""
 
     data_raw_dir().mkdir(parents=True, exist_ok=True)
@@ -29,7 +31,7 @@ def main(force_download: bool = False) -> None:
 
     news_raw_path = get_raw_path("news_dataset_raw.csv")
     news_output_path = get_processed_path("news_dataset.csv")
-    news_finbert_output_path = get_processed_path("news_dataset_finbert.csv")
+    news_finbert_output_path = get_processed_path("news_dataset_finbert_3m.csv")
 
     stocks_raw_path = get_raw_path("stocks_dataset_raw.csv")
     stocks_output_path = get_processed_path("stocks_dataset.csv")
@@ -55,20 +57,27 @@ def main(force_download: bool = False) -> None:
     # -------------------------
     # News dataset + FinBERT
     # -------------------------
-    if news_finbert_output_path.exists() and not force_download:
-        print("FinBERT dataset already exists, skipping...")
+    if run_finbert:
+        print("Using existing FinBERT output (skipping recomputation)...")
+
+        if not news_finbert_output_path.exists():
+            raise FileNotFoundError(
+                f"Expected FinBERT file not found at {news_finbert_output_path}. "
+                "Run FinBERT once first."
+            )
+
+        print("Loading FinBERT dataset...")
+        news_finbert_df = pd.read_csv(news_finbert_output_path)
+
+        print("Aggregating daily news features...")
+        daily_news_df = build_daily_news_features(news_finbert_df)
+
+        daily_news_output_path = get_processed_path("daily_news_features_3m.csv")
+        daily_news_df.to_csv(daily_news_output_path, index=False)
+
+        print(f"Saved daily aggregated output to {daily_news_output_path}")
     else:
-        print("Running FinBERT sentiment...")
-
-        # Use a small subset for initial testing
-        news_df_small = news_df.head(500).copy()
-
-        news_finbert_df = compute_finbert_sentiment(
-            news_df_small,
-            text_column="title",
-            batch_size=32,
-        )
-        news_finbert_df.to_csv(news_finbert_output_path, index=False)
+        print("Skipping FinBERT sentiment...")
 
     # -------------------------
     # Stock raw dataset
@@ -90,4 +99,4 @@ def main(force_download: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    main(force_download=False)
+    main(force_download=False, run_finbert=True)

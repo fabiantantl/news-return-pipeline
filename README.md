@@ -93,3 +93,8 @@ The processed CSV contains:
 
 Fabian Tan  
 Hector Chen
+
+
+Notes for Authors Use 
+for now: use neutral→0
+preferred later: use p_pos - p_neg
