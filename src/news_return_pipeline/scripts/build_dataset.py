@@ -25,6 +25,7 @@ from news_return_pipeline.pipeline.align_news_to_trading_calendar import (
     build_carryover_features,
 )
 
+from news_return_pipeline.pipeline.finbert_sentiment import compute_finbert_sentiment
 
 def main(force_download: bool = False, run_finbert: bool = False) -> None:
     """Download raw data if needed, preprocess datasets, and save outputs."""
