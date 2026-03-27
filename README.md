@@ -99,4 +99,4 @@ Notes for Authors Use
 for now: use neutral→0
 preferred later: use p_pos - p_neg
 
-map weekend headings to the next day
+map weekend headings to the next day (doing now)

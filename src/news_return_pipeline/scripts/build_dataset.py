@@ -20,6 +20,11 @@ from news_return_pipeline.pipeline.preprocess_sp500 import preprocess_sp500
 from news_return_pipeline.pipeline.preprocess_stocks import preprocess_stocks_dataframe
 from news_return_pipeline.pipeline.make_targets import add_forward_return_target
 
+from news_return_pipeline.pipeline.align_news_to_trading_calendar import (
+    align_news_to_trading_calendar,
+    build_carryover_features,
+)
+
 
 def main(force_download: bool = False, run_finbert: bool = False) -> None:
     """Download raw data if needed, preprocess datasets, and save outputs."""
@@ -39,6 +44,19 @@ def main(force_download: bool = False, run_finbert: bool = False) -> None:
     sp500_output_path = get_processed_path("sp500_index.csv")
 
     # -------------------------
+    # PROTOTYPE WINDOW CONTROL
+    # -------------------------
+    # For prototyping:
+    # keep USE_PROTOTYPE_WINDOW = True
+    # keep PROTOTYPE_MONTHS = 3
+    #
+    # For the full dataset later:
+    # set USE_PROTOTYPE_WINDOW = False
+    # -------------------------
+    USE_PROTOTYPE_WINDOW = True
+    PROTOTYPE_MONTHS = 3
+
+    # -------------------------
     # News raw dataset
     # -------------------------
     if news_raw_path.exists() and not force_download:
@@ -56,42 +74,6 @@ def main(force_download: bool = False, run_finbert: bool = False) -> None:
     news_df = preprocess_news_dataframe(news_raw_df)
     news_df.to_csv(news_output_path, index=False)
     print(f"Saved processed news dataset to {news_output_path}")
-
-    # -------------------------
-    # Cached FinBERT -> daily aggregated news
-    # -------------------------
-    if run_finbert:
-        if not news_finbert_output_path.exists():
-            raise FileNotFoundError(
-                f"Expected FinBERT file not found at {news_finbert_output_path}. "
-                "Run FinBERT once first."
-            )
-
-        print("Loading cached FinBERT dataset...")
-        news_finbert_df = pd.read_csv(news_finbert_output_path)
-
-        print("Aggregating daily news features...")
-        daily_news_df = build_daily_news_features(news_finbert_df)
-        daily_news_df.to_csv(daily_news_output_path, index=False)
-
-        print(f"Saved daily aggregated news output to {daily_news_output_path}")
-
-    else:
-        print("Skipping aggregation from cached FinBERT file...")
-
-        if not daily_news_output_path.exists():
-            raise FileNotFoundError(
-                f"Expected daily news file not found at {daily_news_output_path}. "
-                "Run once with run_finbert=True to create it."
-            )
-
-        print("Loading existing daily aggregated news dataset...")
-        daily_news_df = pd.read_csv(daily_news_output_path)
-
-    # Make sure daily news date is parsed correctly after CSV load
-    daily_news_df["date"] = pd.to_datetime(daily_news_df["date"], errors="coerce").dt.normalize()
-    if daily_news_df["date"].isna().any():
-        raise ValueError("daily_news_df contains non-parseable dates.")
 
     # -------------------------
     # Multi-stock raw dataset
@@ -137,6 +119,85 @@ def main(force_download: bool = False, run_finbert: bool = False) -> None:
         print(f"Permission denied when saving to {sp500_output_path}")
         print("Close the file if it is open in Excel or another program, then rerun.")
         raise
+
+    # -------------------------
+    # Cached FinBERT -> trading-calendar alignment -> daily aggregated news
+    # -------------------------
+    if run_finbert:
+        if not news_finbert_output_path.exists():
+            raise FileNotFoundError(
+                f"Expected FinBERT file not found at {news_finbert_output_path}. "
+                "Run FinBERT once first."
+            )
+
+        print("Loading cached FinBERT dataset...")
+        news_finbert_df = pd.read_csv(news_finbert_output_path)
+
+        news_finbert_df["date"] = pd.to_datetime(
+            news_finbert_df["date"], errors="coerce"
+        ).dt.normalize()
+        if news_finbert_df["date"].isna().any():
+            raise ValueError("news_finbert_df contains non-parseable dates.")
+
+        print("Aligning headline dates to S&P 500 trading calendar...")
+        news_finbert_aligned_df = align_news_to_trading_calendar(
+            news_finbert_df,
+            sp500_df["date"],
+        )
+
+        print("\nAligned headline preview:")
+        preview_columns = ["original_date", "date", "was_mapped", "days_shifted", "title"]
+        preview_columns = [c for c in preview_columns if c in news_finbert_aligned_df.columns]
+        print(news_finbert_aligned_df[preview_columns].head(10).to_string(index=False))
+
+        print("Aggregating daily news features...")
+        daily_news_df = build_daily_news_features(news_finbert_aligned_df)
+
+        print("Building carryover features...")
+        carryover_df = build_carryover_features(news_finbert_aligned_df)
+
+        daily_news_df = (
+            daily_news_df.merge(carryover_df, on="date", how="left")
+            .sort_values("date")
+            .reset_index(drop=True)
+        )
+
+        daily_news_df["n_carryover_headlines"] = (
+            daily_news_df["n_carryover_headlines"].fillna(0).astype(int)
+        )
+        daily_news_df["has_carryover_news"] = (
+            daily_news_df["has_carryover_news"].fillna(0).astype(int)
+        )
+
+        daily_news_df.to_csv(daily_news_output_path, index=False)
+        print(f"Saved daily aggregated news output to {daily_news_output_path}")
+
+    else:
+        print("Skipping aggregation from cached FinBERT file...")
+
+        if not daily_news_output_path.exists():
+            raise FileNotFoundError(
+                f"Expected daily news file not found at {daily_news_output_path}. "
+                "Run once with run_finbert=True to create it."
+            )
+
+        print("Loading existing daily aggregated news dataset...")
+        daily_news_df = pd.read_csv(daily_news_output_path)
+
+    # Make sure daily news date is parsed correctly after CSV load
+    daily_news_df["date"] = pd.to_datetime(
+        daily_news_df["date"], errors="coerce"
+    ).dt.normalize()
+    if daily_news_df["date"].isna().any():
+        raise ValueError("daily_news_df contains non-parseable dates.")
+
+    # Dynamic prototype window based on news coverage
+    prototype_start = daily_news_df["date"].min()
+    prototype_end = prototype_start + pd.DateOffset(months=PROTOTYPE_MONTHS)
+
+    print("\nPrototype window derived from daily_news_df:")
+    print("prototype_start =", prototype_start.date())
+    print("prototype_end   =", (prototype_end - pd.Timedelta(days=1)).date())
 
     # -------------------------
     # Create forward return target on FULL S&P 500 trading-day calendar
@@ -185,6 +246,8 @@ def main(force_download: bool = False, run_finbert: bool = False) -> None:
         "frac_positive",
         "frac_negative",
         "frac_neutral",
+        "n_carryover_headlines",
+        "has_carryover_news",
     ]
 
     for col in zero_fill_columns:
@@ -197,6 +260,35 @@ def main(force_download: bool = False, run_finbert: bool = False) -> None:
     # Drop rows whose 5-day future return is unavailable
     model_df = model_df.dropna(subset=["target_return_5d"]).reset_index(drop=True)
 
+    # -------------------------
+    # PROTOTYPE TRUNCATION BLOCK
+    # Edit here if you want the full dataset later:
+    # - keep this block for 3-month prototyping
+    # - disable it by setting USE_PROTOTYPE_WINDOW = False above
+    # -------------------------
+    if USE_PROTOTYPE_WINDOW:
+        model_df = model_df.loc[
+            (model_df["date"] >= prototype_start) & (model_df["date"] < prototype_end)
+        ].reset_index(drop=True)
+
+        print("\nUsing prototype-truncated dataset")
+        print(
+            "Prototype-truncated date range:",
+            model_df["date"].min().date(),
+            "to",
+            model_df["date"].max().date(),
+        )
+        print("Prototype-truncated rows:", len(model_df))
+    else:
+        print("\nUsing full dataset")
+        print(
+            "Full date range:",
+            model_df["date"].min().date(),
+            "to",
+            model_df["date"].max().date(),
+        )
+        print("Full rows:", len(model_df))
+
     # Drop helper debug columns before saving
     helper_columns = ["future_date_5d", "calendar_day_gap"]
     model_df = model_df.drop(columns=[c for c in helper_columns if c in model_df.columns])
@@ -207,15 +299,60 @@ def main(force_download: bool = False, run_finbert: bool = False) -> None:
 
     print("\nModel dataset shape:", model_df.shape)
     print("\nModel dataset headers:")
-    print(model_df.columns.tolist())
-    print("\nFirst 5 rows of model dataset:")
-    print(model_df.head().to_string(index=False))
+    # print(model_df.columns.tolist())
+    # print("\nFirst 5 rows of model dataset:")
+    # print(model_df.head().to_string(index=False))
 
-    model_output_path = get_processed_path("model_dataset_3m.csv")
+    if USE_PROTOTYPE_WINDOW:
+        model_output_path = get_processed_path("model_dataset_3m.csv")
+    else:
+        model_output_path = get_processed_path("model_dataset_full.csv")
+
     model_df.to_csv(model_output_path, index=False)
 
     print(f"Saved final model dataset to {model_output_path}")
 
+    # print("\nRows whose FINAL mapped date is still weekend:")
+    # print((news_finbert_aligned_df["date"].dt.weekday >= 5).sum())
+
+    # print("\nMapped rows not landing on Monday:")
+    # mapped_not_monday = news_finbert_aligned_df.loc[
+    #     news_finbert_aligned_df["was_mapped"] &
+    #     (news_finbert_aligned_df["date"].dt.day_name() != "Monday"),
+    #     ["original_date", "date", "days_shifted", "title"]
+    # ].copy()
+
+    # mapped_not_monday["original_weekday"] = mapped_not_monday["original_date"].dt.day_name()
+    # mapped_not_monday["mapped_weekday"] = mapped_not_monday["date"].dt.day_name()
+
+    # print(
+    #     mapped_not_monday[
+    #         ["original_date", "original_weekday", "date", "mapped_weekday", "days_shifted", "title"]
+    #     ].head(20).to_string(index=False)
+    # )
+
+    # print("\nAggregated rows with carryover news:")
+    # print(
+    #     daily_news_df.loc[
+    #         daily_news_df["has_carryover_news"] == 1,
+    #         ["date", "n_headlines", "n_carryover_headlines", "has_carryover_news"]
+    #     ].head(20).to_string(index=False)
+    # )
+
+    # print("\nAlignment summary:")
+    # print("Total headline rows:", len(news_finbert_aligned_df))
+    # print("Mapped rows:", int(news_finbert_aligned_df["was_mapped"].sum()))
+    # print(
+    #     "Mapped-to-Monday rows:",
+    #     int(
+    #         news_finbert_aligned_df.loc[
+    #             news_finbert_aligned_df["was_mapped"] &
+    #             (news_finbert_aligned_df["date"].dt.day_name() == "Monday")
+    #         ].shape[0]
+    #     )
+    # )
+
 
 if __name__ == "__main__":
-    main(force_download=False, run_finbert=False)
+    main(force_download=False, run_finbert=True)
+
