@@ -125,14 +125,14 @@ def main(force_download: bool = False, run_finbert: bool = False) -> None:
     # Cached FinBERT -> trading-calendar alignment -> daily aggregated news
     # -------------------------
     if run_finbert:
-        if not news_finbert_output_path.exists():
-            raise FileNotFoundError(
-                f"Expected FinBERT file not found at {news_finbert_output_path}. "
-                "Run FinBERT once first."
-            )
-
-        print("Loading cached FinBERT dataset...")
-        news_finbert_df = pd.read_csv(news_finbert_output_path)
+        if news_finbert_output_path.exists() and not force_download:
+            print("Loading cached FinBERT dataset...")
+            news_finbert_df = pd.read_csv(news_finbert_output_path)
+        else:
+            print("Running FinBERT sentiment scoring")
+            news_finbert_df = compute_finbert_sentiment(news_df, text_column="title")
+            news_finbert_df.to_csv(news_finbert_output_path, index=False)
+            print(f"Saved FinBERT dataset to {news_finbert_output_path}")
 
         news_finbert_df["date"] = pd.to_datetime(
             news_finbert_df["date"], errors="coerce"
