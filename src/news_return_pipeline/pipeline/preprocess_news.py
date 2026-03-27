@@ -136,7 +136,7 @@ def normalize_dates(df: pd.DataFrame) -> pd.DataFrame:
 def _theme_match(text: str) -> bool:
     """Return True if gkg_themes contains a specific market-relevant theme."""
 
-    if not text:
+    if not isinstance(text, str) or not text:
         return False
 
     text = str(text).upper()
