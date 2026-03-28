@@ -17,8 +17,16 @@ load_dotenv()
 DEFAULT_DATASET = "verracodeguacas/findkg-gdelt-based-financial-news-and-mentions"
 
 
-def download_news_headlines(dataset: str = DEFAULT_DATASET) -> pd.DataFrame:
-    """Download the Kaggle dataset and load one articles parquet file."""
+def download_news_headlines(
+    dataset: str = DEFAULT_DATASET,
+    year: int | None = None,
+) -> pd.DataFrame:
+    """
+    Download the Kaggle dataset and load one articles parquet file.
+
+    If year is provided, load articles_{year}.parquet.
+    If year is None, load all articles_*.parquet files and concatenate them.
+    """
 
     token = os.getenv("KAGGLE_API_TOKEN")
     if not token:
@@ -35,18 +43,32 @@ def download_news_headlines(dataset: str = DEFAULT_DATASET) -> pd.DataFrame:
         if not parquet_files:
             raise RuntimeError("No articles_*.parquet file found in downloaded dataset")
 
-        source_file = parquet_files[0]
-        print("Selected file:", source_file.name)
+        if year is not None:
+            target_name = f"articles_{year}.parquet"
+            matching_files = [p for p in parquet_files if p.name == target_name]
 
-        df = pd.read_parquet(source_file)
+            if not matching_files:
+                available = [p.name for p in parquet_files]
+                raise RuntimeError(
+                    f"{target_name} not found in dataset. Available files: {available}"
+                )
 
-        # print("Shape:", df.shape)
-        # print("Columns:", df.columns.tolist())
-        # print(df.head())
+            source_file = matching_files[0]
+            print("Selected file:", source_file.name)
 
-        # print(df["gkg_themes"].head(20))
-        # print(df["gkg_orgs"].head(20))
-        # print(df["gkg_persons"].head(20))
+            df = pd.read_parquet(source_file)
+            return df
+
+        print("No year specified. Loading all yearly parquet files...")
+        print("Files found:", [p.name for p in parquet_files])
+
+        dfs = []
+        for source_file in parquet_files:
+            print("Loading:", source_file.name)
+            df_year = pd.read_parquet(source_file)
+            dfs.append(df_year)
+
+        df = pd.concat(dfs, ignore_index=True)
         return df
 
     except Exception as e:
@@ -54,4 +76,4 @@ def download_news_headlines(dataset: str = DEFAULT_DATASET) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    download_news_headlines()
+    download_news_headlines(year=2020)

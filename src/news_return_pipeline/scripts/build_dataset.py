@@ -25,18 +25,31 @@ from news_return_pipeline.pipeline.preprocess_sp500 import preprocess_sp500
 from news_return_pipeline.pipeline.preprocess_stocks import preprocess_stocks_dataframe
 
 
+YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026]
+
+
 def build_news_raw(force_download: bool = False) -> pd.DataFrame:
-    """Load raw news data from disk or download from Kaggle."""
+    """Load combined raw news data from disk or download selected yearly files and concatenate."""
 
     news_raw_path = get_raw_path("news_raw.csv")
     if news_raw_path.exists() and not force_download:
-        print("Loading existing raw news dataset...")
+        print("Loading existing combined raw news dataset...")
         return pd.read_csv(news_raw_path)
 
-    print("Downloading raw news dataset...")
-    news_raw_df = download_news_headlines()
+    print("Downloading yearly raw news datasets and concatenating...")
+    yearly_frames = []
+
+    for year in YEARS:
+        print(f"Loading raw news for year {year}...")
+        year_df = download_news_headlines(year=year)
+        year_df["source_year"] = year
+        yearly_frames.append(year_df)
+
+    news_raw_df = pd.concat(yearly_frames, ignore_index=True)
     news_raw_df.to_csv(news_raw_path, index=False)
-    print(f"Saved raw news dataset to {news_raw_path}")
+    print(f"Saved combined raw news dataset to {news_raw_path}")
+    print("Combined raw news shape:", news_raw_df.shape)
+
     return news_raw_df
 
 
@@ -63,10 +76,12 @@ def build_finbert_scored_with_cache(
         cache_df = pd.read_csv(cache_path)
         print(f"Loaded existing FinBERT cache from {cache_path}")
     else:
-        cache_df = pd.DataFrame(columns=list(news_preprocessed_df.columns) + [
-            "sentiment_label",
-            "sentiment_score",
-        ])
+        cache_df = pd.DataFrame(
+            columns=list(news_preprocessed_df.columns) + [
+                "sentiment_label",
+                "sentiment_score",
+            ]
+        )
         print("No existing FinBERT cache found; creating a new one.")
 
     for df_name, df in (("news_preprocessed_df", news_preprocessed_df), ("cache_df", cache_df)):
@@ -118,9 +133,13 @@ def build_finbert_scored_with_cache(
     )
 
     required_sentiment_columns = ["sentiment_label", "sentiment_score"]
-    missing_sentiment_columns = [c for c in required_sentiment_columns if c not in news_finbert_df.columns]
+    missing_sentiment_columns = [
+        c for c in required_sentiment_columns if c not in news_finbert_df.columns
+    ]
     if missing_sentiment_columns:
-        raise ValueError(f"Missing sentiment column(s) after cache merge: {missing_sentiment_columns}")
+        raise ValueError(
+            f"Missing sentiment column(s) after cache merge: {missing_sentiment_columns}"
+        )
 
     if news_finbert_df[required_sentiment_columns].isna().any().any():
         raise ValueError("Some rows are missing FinBERT outputs after cache merge.")
@@ -134,7 +153,10 @@ def build_news_aligned(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Align headline dates to trading days and build carryover features."""
 
-    news_aligned_df = align_news_to_trading_calendar(news_finbert_df, sp500_preprocessed_df["date"])
+    news_aligned_df = align_news_to_trading_calendar(
+        news_finbert_df,
+        sp500_preprocessed_df["date"],
+    )
     news_aligned_path = get_processed_path("news_aligned.csv")
     news_aligned_df.to_csv(news_aligned_path, index=False)
     print(f"Saved aligned headline dataset to {news_aligned_path}")
@@ -160,8 +182,12 @@ def build_news_daily_features(
         .reset_index(drop=True)
     )
 
-    news_daily_df["n_carryover_headlines"] = news_daily_df["n_carryover_headlines"].fillna(0).astype(int)
-    news_daily_df["has_carryover_news"] = news_daily_df["has_carryover_news"].fillna(0).astype(int)
+    news_daily_df["n_carryover_headlines"] = (
+        news_daily_df["n_carryover_headlines"].fillna(0).astype(int)
+    )
+    news_daily_df["has_carryover_news"] = (
+        news_daily_df["has_carryover_news"].fillna(0).astype(int)
+    )
 
     news_daily_path = get_processed_path("news_daily_features.csv")
     news_daily_df.to_csv(news_daily_path, index=False)
@@ -294,7 +320,10 @@ def main(force_download: bool = False, run_finbert: bool = True) -> None:
         news_preprocessed_df,
         run_finbert=run_finbert,
     )
-    news_aligned_df, news_carryover_df = build_news_aligned(news_finbert_df, sp500_preprocessed_df)
+    news_aligned_df, news_carryover_df = build_news_aligned(
+        news_finbert_df,
+        sp500_preprocessed_df,
+    )
     news_daily_df = build_news_daily_features(news_aligned_df, news_carryover_df)
 
     sp500_targets_df = build_sp500_targets(sp500_preprocessed_df)
