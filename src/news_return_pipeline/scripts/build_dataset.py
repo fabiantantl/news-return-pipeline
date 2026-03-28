@@ -331,4 +331,4 @@ def main(force_download: bool = False, run_finbert: bool = True) -> None:
 
 
 if __name__ == "__main__":
-    main(force_download=False, run_finbert=True)
+    main(force_download=True, run_finbert=True)
